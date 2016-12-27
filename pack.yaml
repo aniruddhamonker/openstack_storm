@@ -1,0 +1,10 @@
+---
+ref: Open-Stack-Storm
+name: Open-Stack-Storm
+description: A simple pack containing examples of sensor, rule, and action.
+keywords:
+    - example
+    - test
+version: 0.1.0
+author: Aniruddh-Amonker
+email: aamonker@brocade.com

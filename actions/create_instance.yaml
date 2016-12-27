@@ -1,0 +1,47 @@
+---
+name: create_instance
+runner_type: "python-script"
+description: creates a new VM instance using Openstack Novaclient api
+enabled: true
+entry_point: "create_instance.py"
+parameters:
+    compute_host_ipaddr:
+        type: "string"
+        description: Ip address of the compute host to create a VM instance on
+        required: true
+    username:
+        type: "string"
+        description: Openstack Login for tenant
+        required: true
+    password:
+        type: "string"
+        description: Password for provided username
+        required: true
+    key_name:
+        type: "string"
+        description: key pair name which provides SSH access to your instance.
+        required: true
+     instance_name:
+        type: "string"
+        description: Name to be assigned to VM instance
+        required: true
+    version:
+        type: "integer"
+        description: Version of Openstack Identity service
+        default: 2
+    auth_url:
+        type: "string"
+        description: Authentication URL for Openstack Identity api
+        default: "http://{{compute_host_ipaddr}}:5000/v2.0"
+    image:
+        type: "string"
+        description: a virtual machine image that works with OpenStack
+        default: "cirros"
+    flavor:
+        type: "string"
+        description: flavors that define the compute, memory, and storage capacity of nova computing instances
+        default: "m1.tiny"
+    net:
+        type: "string"
+        description: neutron network name to be associate with new vm instance
+        default: "private"
