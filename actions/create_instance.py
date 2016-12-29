@@ -14,6 +14,11 @@ class OpenstackInstance(Action):
     def run(self, auth_url, password, username, version,
             instance_name="{}_instance".format(self.credentials['username']), key_name=None, network_name='private',
             flavor='m1.tiny', image='cirros', **kwargs):
+        """
+        Descriptions for the input parameters to this method is available under "create_instance.yaml" file.
+        This method Sets up credentials to authenticate against Openstack Compute API endpoints,
+        Uses python-novaclient API to create "client_class" object.
+        """
         # Alternative way to import credentials:
         # self.credentials_new = {input_params: value for input_params, value in kwargs.items()}
         self.credentials = {
@@ -42,6 +47,7 @@ class OpenstackInstance(Action):
     def create_instance(self, **instance_attrs):
         """
         :rtype: class novaclient.base.ListWithMeta
+        With instance parameters provided under "instance_attrs" creates a new VM instance on openstack compute host
         """
         instance_attrs['nics'] = [{'net-id': instance_attrs['net'].id}]
         try:
@@ -59,6 +65,11 @@ class OpenstackInstance(Action):
             self.logger.error("Failed to create instance {}".format(instance_attrs['name']))
 
     def get_tenant_name(self, **credentials):
+        """
+
+        :param credentials: dict "self.credentials" defined under method "run".
+        :return: type(string), tenant name for the user credentials['username']
+        """
         token_url = "http://{}:5000/v2.0/tokens".format(credentials['compute_host_ipaddr'])
         headers = {'Content-Type': 'application/json'}
         payload = {
