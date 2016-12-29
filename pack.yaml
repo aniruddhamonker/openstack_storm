@@ -1,6 +1,6 @@
 ---
-ref: Open-Stack-Storm
-name: Open-Stack-Storm
+ref: openstack_storm
+name: openstack_storm
 description: A simple pack containing examples of sensor, rule, and action.
 keywords:
     - example

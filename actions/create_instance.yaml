@@ -21,7 +21,7 @@ parameters:
         type: "string"
         description: key pair name which provides SSH access to your instance.
         required: true
-     instance_name:
+    instance_name:
         type: "string"
         description: Name to be assigned to VM instance
         required: true

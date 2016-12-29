@@ -8,57 +8,64 @@ from novaclient.client import Client
 
 
 class OpenstackInstance(Action):
-    def __init__(self, config: object = None):
+    def __init__(self, config=None):
         super(OpenstackInstance, self).__init__(config=config)
 
-    def run(self, **kwargs):
-        self.compute_host = kwargs.get('compute_host_ipaddr')
+    def run(self, auth_url, password, username, version,
+            instance_name="{}_instance".format(self.credentials['username']), key_name=None, network_name='private',
+            flavor='m1.tiny', image='cirros', **kwargs):
         # Alternative way to import credentials:
         # self.credentials_new = {input_params: value for input_params, value in kwargs.items()}
-        assert isinstance(self._get_project_name, object)
         self.credentials = {
-            'version': kwargs['version']
-            'username': kwargs['username'],
-            'password': kwargs['password'],
-            'auth_url': kwargs['auth_url'],
-            'project_id': self._get_project_name
+            'version': version,
+            'username': username,
+            'api_key': password,
+            'auth_url': auth_url,
+            'project_id': self.get_tenant_name(**kwargs)
         }
-        self.nova_client = Client(**self.credentials)
-        self.instance_attrs = {
-            'image': self.nova_client.images.find(name=kwargs.get('image', 'cirros')),
-            'flavor': self.nova_client.flavors.find(name=kwargs.get('flavor', 'm1.tiny')),
-            'net': self.nova_client.networks.find(label=kwargs.get('network_name', 'private')),
-            'key_name': kwargs.get('key_name'),
-            'instance_name': kwargs.get('instance_name', "{}_instance".format(self.credentials['username']))
-        }
-        self.create_instance(self.instance_attrs)
-
-
-
-    def create_instance(self, **instance_attrs):
-        nics = [{'net-id': instance_attrs['net'].id}]
         try:
-            self.nova_client.servers.create(nics=nics, **instance_attrs)
+            self.nova_client = Client(**self.credentials)
+            self.logger.info("Authentication of nova client successful")
+        except Exception as err:
+            self.logger.error("Creating nova client failed with {} : {}".format(type(err),err))
+            
+        self.instance_attrs = {
+            'image': self.nova_client.images.find(name=image),
+            'flavor': self.nova_client.flavors.find(name=flavor),
+            'net': self.nova_client.networks.find(label=network_name),
+            'key_name': key_name,
+            'name': instance_name
+        }
+        
+        self.create_instance(**self.instance_attrs)
+            
+    def create_instance(self, **instance_attrs):
+        """
+        :rtype: class novaclient.base.ListWithMeta
+        """
+        instance_attrs['nics'] = [{'net-id': instance_attrs['net'].id}]
+        try:
+            self.nova_client.servers.create(**instance_attrs)
             self.logger.info("Creating VM instance {}".format(instance_attrs['name']))
             time.sleep(10)
-        except ValueError as err:
-            self.logger.error("Failed to create instance {}\nError: {}".format(instance_attrs['name'], err))
-        if instance_attrs['name'] in self.nova_client.servers.list():
-            self.logger.info("Instance created successfully")
-            return
-        else:
-            self.logging.error("Failed to create instance {}".format(instance_attrs['name']))
-            sys.exit(1)
+        except Exception as err:
+            print("Failed to create instance {}\nError: {}--> {}".format(instance_attrs['name'], type(err), err))
 
-    @property
-    def _get_project_name(self):
-        token_url = "http://{}:5000/v2.0/tokens".format(self.compute_host)
+        instances = self.nova_client.servers.list()
+        if instance_attrs['name'] in [i.name for i in instances]:
+            self.logger.info("Instance created successfully")
+            return instances
+        else:
+            self.logger.error("Failed to create instance {}".format(instance_attrs['name']))
+
+    def get_tenant_name(self, **credentials):
+        token_url = "http://{}:5000/v2.0/tokens".format(credentials['compute_host_ipaddr'])
         headers = {'Content-Type': 'application/json'}
         payload = {
             'auth': {
                 'passwordCredentials': {
-                    'username': self.credentials.get('username'),
-                    'password': self.credentials.get('password')
+                    'username': credentials['username'],
+                    'password': credentials['password']
                 }
             }
         }
@@ -68,7 +75,7 @@ class OpenstackInstance(Action):
             request.raise_for_status()
             sys.exit(1)
         response = request.json()
-        return response['access']['token']['id']
+        return response['access']['user']['name']
 
 
 
